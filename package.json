@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@slack/web-api": "^5.14.0"
+    "@slack/web-api": "^5.14.0",
+    "sipgateio": "^2.1.3"
   }
 }
