@@ -5,7 +5,7 @@ if (!token) throw new Error("SLACK_TOKEN environment variable not set!");
 
 const web = new WebClient(token);
 
-interface Status {
+export interface Status {
     status_text: string;
     status_emoji: string;
 }
