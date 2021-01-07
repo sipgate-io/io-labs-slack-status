@@ -20,7 +20,7 @@ interface SlackUserInfo {
 const mappings: Record<string, SlackUserInfo | undefined> = JSON.parse(readFileSync("mappings.json", "utf8"));
 
 // map from slackUserId to status before AnswerEvent
-let currentStatuses: Record<string, Status> = {}
+let previousStatuses: Record<string, Status> = {}
 
 webhookModule.createServer({port: webhookServerPort, serverAddress: webhookServerAddress}).then(server => {
     console.log("Listening on port", webhookServerPort)
@@ -34,12 +34,13 @@ webhookModule.createServer({port: webhookServerPort, serverAddress: webhookServe
             return;
         }
 
-        if (currentStatuses[slackUserInfo.slackMemberId]) {
+        if (previousStatuses[slackUserInfo.slackMemberId]) {
+            console.warn(`[answerEvent] Status of ${relevantNumber} was already set.`);
             return;
         }
 
         const previousStatus = await getStatus(slackUserInfo.slackMemberId);
-        currentStatuses[slackUserInfo.slackMemberId] = previousStatus;
+        previousStatuses[slackUserInfo.slackMemberId] = previousStatus;
 
         const inCallStatus = {
             status_emoji: ":phone:",
@@ -60,12 +61,12 @@ webhookModule.createServer({port: webhookServerPort, serverAddress: webhookServe
             return;
         }
 
-        const previousStatus: Status | undefined = currentStatuses[slackUserInfo.slackMemberId];
+        const previousStatus: Status | undefined = previousStatuses[slackUserInfo.slackMemberId];
 
         await setStatus(slackUserInfo.slackMemberId, previousStatus);
 
         console.log("[hangupEvent] setting status of", relevantNumber, "back to", previousStatus);
 
-        delete currentStatuses[slackUserInfo.slackMemberId];
+        delete previousStatuses[slackUserInfo.slackMemberId];
     });
 })
