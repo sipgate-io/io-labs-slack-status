@@ -1,7 +1,8 @@
-import { createWebhookModule } from "sipgateio";
-import { readFileSync } from "fs";
+import {createWebhookModule} from "sipgateio";
+import {readFileSync} from "fs";
 
-import { getStatus, setStatus, clearStatus, Status } from "./slack";
+import {getStatus, setStatus, Status} from "./slack";
+import {HangUpCause} from "sipgateio/dist/webhook";
 
 const webhookModule = createWebhookModule();
 
@@ -21,44 +22,50 @@ const mappings: Record<string, SlackUserInfo | undefined> = JSON.parse(readFileS
 // map from slackUserId to status before AnswerEvent
 let currentStatuses: Record<string, Status> = {}
 
-webhookModule.createServer({ port: webhookServerPort, serverAddress: webhookServerAddress }).then(server => {
+webhookModule.createServer({port: webhookServerPort, serverAddress: webhookServerAddress}).then(server => {
     console.log("Listening on port", webhookServerPort)
 
     server.onAnswer(async answerEvent => {
-        const relevantNumber = answerEvent.direction === "out" ? answerEvent.from : answerEvent.to;
-        const slackUserInfo: SlackUserInfo | undefined = mappings[relevantNumber];
+        const relevantNumber = answerEvent.direction === "out" ? answerEvent.from : answerEvent.answeringNumber;
+        const slackUserInfo: SlackUserInfo | undefined = mappings[relevantNumber] || mappings[`+${relevantNumber}`];
 
         if (!slackUserInfo) {
-            console.warn(`No slack user mapped for number ${relevantNumber}`);
+            console.warn(`[answerEvent] No slack user mapped for number ${relevantNumber}`);
             return;
         }
 
-        const oldStatus = await getStatus(slackUserInfo.slackMemberId);
-        currentStatuses[slackUserInfo.slackMemberId] = oldStatus;
+        if (currentStatuses[slackUserInfo.slackMemberId]) {
+            return;
+        }
 
-        await setStatus(slackUserInfo.slackMemberId, {
+        const previousStatus = await getStatus(slackUserInfo.slackMemberId);
+        currentStatuses[slackUserInfo.slackMemberId] = previousStatus;
+
+        const inCallStatus = {
             status_emoji: ":phone:",
             status_text: "Currently in a call",
-        });
+        };
+        await setStatus(slackUserInfo.slackMemberId, inCallStatus);
 
-        console.log("setting status of", relevantNumber);
+        console.log("[answerEvent] setting status of", relevantNumber, "from", previousStatus, "to", inCallStatus);
     });
     server.onHangUp(async hangupEvent => {
-        const relevantNumber = hangupEvent.direction === "out" ? hangupEvent.from : hangupEvent.to;
-        const slackUserInfo: SlackUserInfo | undefined = mappings[relevantNumber];
-        if (!slackUserInfo) return;
-
-        const oldStatus: Status | undefined = currentStatuses[slackUserInfo.slackMemberId];
-
-        if (!oldStatus) {
-            // no custom status has been set yet
-            // the hang up event occured, because the call was sent to voicemail
+        if (hangupEvent.cause === HangUpCause.FORWARDED) {
+            return;
+        }
+        const relevantNumber = hangupEvent.direction === "out" ? hangupEvent.from : hangupEvent.answeringNumber;
+        const slackUserInfo: SlackUserInfo | undefined = mappings[relevantNumber] || mappings[`+${relevantNumber}`];
+        if (!slackUserInfo) {
+            console.warn(`[hangupEvent] No slack user mapped for number ${relevantNumber}`);
             return;
         }
 
-        await setStatus(slackUserInfo.slackMemberId, oldStatus);
-        delete currentStatuses[slackUserInfo.slackMemberId];
+        const previousStatus: Status | undefined = currentStatuses[slackUserInfo.slackMemberId];
 
-        console.log("clearing status of", relevantNumber);
+        await setStatus(slackUserInfo.slackMemberId, previousStatus);
+
+        console.log("[hangupEvent] setting status of", relevantNumber, "back to", previousStatus);
+
+        delete currentStatuses[slackUserInfo.slackMemberId];
     });
 })
