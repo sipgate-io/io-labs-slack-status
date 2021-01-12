@@ -29,3 +29,9 @@ export async function setStatus(slackMemberId: string, status: Status): Promise<
 export async function clearStatus(slackMemberId: string): Promise<void> {
     await setStatus(slackMemberId, { status_text: "", status_emoji: "" });
 }
+
+export async function getScopes(): Promise<Array<String>> {
+    const response = await web.auth.test();
+    return response.response_metadata.scopes;
+  }
+  
