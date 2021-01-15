@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
+
 import { createWebhookModule } from 'sipgateio';
 
-import * as MAPPINGS from '../mappings.json';
 import { HangUpCause } from 'sipgateio/dist/webhook';
 import { SlackUserInfo, getRelevantNumber, getSlackUserInfo } from './utils';
 import { Status, getStatus, setStatus } from './slack';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const MAPPINGS = require('../mappings.json');
 
 const webhookModule = createWebhookModule();
 
@@ -69,7 +74,7 @@ export const handleAnswer = async (answerEvent): Promise<void> => {
 	);
 };
 
-export const handleHangUp = async (hangUpEvent): Preomise<void> => {
+export const handleHangUp = async (hangUpEvent): Promise<void> => {
 	console.log('HangUpEvent');
 	if (hangUpEvent.cause === HangUpCause.FORWARDED) {
 		return;

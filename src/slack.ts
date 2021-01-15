@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
+
 import { WebClient } from '@slack/web-api';
 
 const token = process.env.SLACK_TOKEN;
