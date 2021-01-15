@@ -1,5 +1,4 @@
-import { AnswerEvent } from 'sipgateio';
-import { EventType, WebhookDirection } from 'sipgateio/dist/webhook';
+import { WebhookDirection } from 'sipgateio';
 import { getRelevantNumber, getSlackUserInfo } from './utils';
 
 const mappings = {
@@ -8,8 +7,8 @@ const mappings = {
 	},
 };
 
-const IN_EVENT: AnswerEvent = {
-	event: EventType.ANSWER,
+const IN_EVENT = {
+	event: 'answer',
 	callId:
 		'54566B150B0C0D3A5D544C54565D7B5F59555755545E5554795B575345514351474D425A5A57',
 	answeringNumber: '+12xxxxxx',
@@ -24,8 +23,8 @@ const IN_EVENT: AnswerEvent = {
 	fullUserId: '000001w0',
 };
 
-const OUT_EVENT: AnswerEvent = {
-	event: EventType.ANSWER,
+const OUT_EVENT = {
+	event: 'answer',
 	callId:
 		'54566B150B0C0D3A5D544C54565D7B5F59555755545E5554795B575345514351474D425A5A57',
 	answeringNumber: '+12xxxxxx',

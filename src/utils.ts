@@ -1,12 +1,8 @@
-import { AnswerEvent, HangUpEvent } from 'sipgateio';
-
 export interface SlackUserInfo {
 	slackMemberId: string;
 }
 
-export function getRelevantNumber(
-	answerEvent: AnswerEvent | HangUpEvent
-): string {
+export function getRelevantNumber(answerEvent): string {
 	return answerEvent.direction === 'out'
 		? answerEvent.from
 		: answerEvent.answeringNumber;

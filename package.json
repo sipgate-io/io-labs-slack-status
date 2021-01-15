@@ -13,7 +13,7 @@
 	"license": "ISC",
 	"dependencies": {
 		"@slack/web-api": "^5.15.0",
-		"sipgateio": "^2.1.4",
+		"sipgateio": "^2.1.5",
 		"ts-node": "^9.1.1"
 	},
 	"devDependencies": {

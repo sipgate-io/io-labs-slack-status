@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable camelcase */
 
-import { AnswerEvent, HangUpEvent, createWebhookModule } from 'sipgateio';
+import {
+	AnswerEvent,
+	HangUpCause,
+	HangUpEvent,
+	createWebhookModule,
+} from 'sipgateio';
 
-import { HangUpCause } from 'sipgateio/dist/webhook';
 import { SlackUserInfo, getRelevantNumber } from './utils';
 import { Status, getStatus, setStatus } from './slack';
 
