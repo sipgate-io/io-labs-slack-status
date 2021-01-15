@@ -4,7 +4,7 @@
 import { WebClient } from '@slack/web-api';
 
 const token = process.env.SLACK_TOKEN;
-//if (!token) throw new Error("SLACK_TOKEN environment variable not set!");
+if (!token) throw new Error('SLACK_TOKEN environment variable not set!');
 
 const web = new WebClient(token);
 
@@ -37,9 +37,4 @@ export async function setStatus(
 
 export async function clearStatus(slackMemberId: string): Promise<void> {
 	await setStatus(slackMemberId, { status_text: '', status_emoji: '' });
-}
-
-export async function getScopes(): Promise<Array<string>> {
-	const response = await web.auth.test();
-	return response.response_metadata.scopes;
 }

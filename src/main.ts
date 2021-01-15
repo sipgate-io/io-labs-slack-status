@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable camelcase */
 
-import { createWebhookModule } from 'sipgateio';
+import { AnswerEvent, HangUpEvent, createWebhookModule } from 'sipgateio';
 
 import { HangUpCause } from 'sipgateio/dist/webhook';
-import { SlackUserInfo, getRelevantNumber, getSlackUserInfo } from './utils';
+import { SlackUserInfo, getRelevantNumber } from './utils';
 import { Status, getStatus, setStatus } from './slack';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const MAPPINGS = require('../mappings.json');
+const MAPPINGS: Record<string, SlackUserInfo> = require('../mappings.json');
 
 const webhookModule = createWebhookModule();
 
@@ -24,7 +24,7 @@ if (!webhookServerAddress) {
 // map from slackUserId to status before AnswerEvent
 const previousStatuses: Record<string, Status> = {};
 
-export const server = webhookModule
+webhookModule
 	.createServer({
 		port: webhookServerPort,
 		serverAddress: webhookServerAddress,
@@ -37,11 +37,11 @@ export const server = webhookModule
 		server.onHangUp(handleHangUp);
 	});
 
-export const handleAnswer = async (answerEvent): Promise<void> => {
-	console.log('answerEvent');
-	console.log(answerEvent);
+async function handleAnswer(answerEvent: AnswerEvent): Promise<void> {
+	if (answerEvent.user === 'voicemail') return;
+
 	const relevantNumber = getRelevantNumber(answerEvent);
-	const slackUserInfo = getSlackUserInfo(relevantNumber, MAPPINGS);
+	const slackUserInfo: SlackUserInfo | undefined = MAPPINGS[relevantNumber];
 
 	if (!slackUserInfo) {
 		console.warn(
@@ -65,26 +65,16 @@ export const handleAnswer = async (answerEvent): Promise<void> => {
 	await setStatus(slackUserInfo.slackMemberId, inCallStatus);
 
 	console.log(
-		'[answerEvent] setting status of',
-		relevantNumber,
-		'from',
-		previousStatus,
-		'to',
-		inCallStatus
+		`[answerEvent] setting status of ${relevantNumber} to ${inCallStatus}`
 	);
-};
+}
 
-export const handleHangUp = async (hangUpEvent): Promise<void> => {
-	console.log('HangUpEvent');
-	if (hangUpEvent.cause === HangUpCause.FORWARDED) {
-		return;
-	}
-	const relevantNumber =
-		hangUpEvent.direction === 'out'
-			? hangUpEvent.from
-			: hangUpEvent.answeringNumber;
-	const slackUserInfo: SlackUserInfo | undefined =
-		MAPPINGS[relevantNumber] || MAPPINGS[`+${relevantNumber}`];
+async function handleHangUp(hangUpEvent: HangUpEvent): Promise<void> {
+	if (hangUpEvent.cause === HangUpCause.FORWARDED) return;
+
+	const relevantNumber = getRelevantNumber(hangUpEvent);
+	const slackUserInfo: SlackUserInfo | undefined = MAPPINGS[relevantNumber];
+
 	if (!slackUserInfo) {
 		console.warn(
 			`[hangupEvent] No slack user mapped for number ${relevantNumber}`
@@ -95,14 +85,12 @@ export const handleHangUp = async (hangUpEvent): Promise<void> => {
 	const previousStatus: Status | undefined =
 		previousStatuses[slackUserInfo.slackMemberId];
 
-	await setStatus(slackUserInfo.slackMemberId, previousStatus);
+	if (!previousStatus) return;
 
 	console.log(
-		'[hangupEvent] setting status of',
-		relevantNumber,
-		'back to',
-		previousStatus
+		`[hangupEvent] setting status of ${relevantNumber} back to ${previousStatus}`
 	);
 
+	await setStatus(slackUserInfo.slackMemberId, previousStatus);
 	delete previousStatuses[slackUserInfo.slackMemberId];
-};
+}
