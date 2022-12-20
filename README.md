@@ -1,6 +1,6 @@
 # Slack Status Prototype
 
-This project is a showcase how to change the Slack status of different users
+This project showcases how to change the Slack status of different users
 when they are in a call.
 
 ## Enabling sipgate.io for your sipgate account
